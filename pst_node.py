@@ -50,8 +50,9 @@ def phase_stretch_transform(img_gray: np.ndarray,
         edges = ndimage.binary_closing(edges, structure=np.ones((3, 3))).astype(np.float64)
         edges = ndimage.binary_opening(edges, structure=np.ones((3, 3))).astype(np.float64)
     else:
-        # soft edge map – normalise phase to 0..1
-        edges = (phase - phase.min()) / (phase.max() - phase.min() + 1e-9)
+        # soft edge map – |phase| normalised: edges are bright, flat regions are dark
+        abs_phase = np.abs(phase)
+        edges = abs_phase / (abs_phase.max() + 1e-9)
 
     return phase, edges
 
@@ -149,8 +150,9 @@ class PhaseStretchTransformNode:
                 edge_rgb = np.stack([edges] * 3, axis=-1).astype(np.float32)
                 edge_out = edge_rgb
 
-            # ── phase output (normalised to 0..1, RGB) ───────────────────────
-            phase_norm = (phase - phase.min()) / (phase.max() - phase.min() + 1e-9)
+            # ── phase output: |phase| normalised – edges bright, flat regions dark
+            abs_phase = np.abs(phase)
+            phase_norm = abs_phase / (abs_phase.max() + 1e-9)
             phase_out = np.stack([phase_norm] * 3, axis=-1).astype(np.float32)
 
             edge_frames.append(torch.from_numpy(edge_out))
