@@ -8,8 +8,8 @@ def phase_stretch_transform(img_gray: np.ndarray,
                             phase_strength: float = 0.48,
                             warp_strength: float = 12.14,
                             morph_flag: bool = True,
-                            min_thresh: float = -1.0,
-                            max_thresh: float = 0.003) -> tuple[np.ndarray, np.ndarray]:
+                            min_thresh: float = -0.35,
+                            max_thresh: float = 0.35) -> tuple[np.ndarray, np.ndarray]:
     """
     Phase Stretch Transform (PST)
 
@@ -31,10 +31,13 @@ def phase_stretch_transform(img_gray: np.ndarray,
     img_fft = np.fft.fftshift(np.fft.fft2(img_gray.astype(np.float64)))
     img_filtered = img_fft * lpf
 
-    # ── PST kernel (warped phase ramp) ───────────────────────────────────────
+    # ── PST kernel (warped phase ramp, Eq.5 in paper) ────────────────────────
+    # K[u,v] = exp(j * S * phi_w)  where phi_w = W*R / (1 + W*R)
+    # Unit-amplitude, pure-phase kernel — amplitude must NOT be modified.
     W_val = warp_strength
     S_val = phase_strength
-    pst_kernel = (W_val * R / (1.0 + W_val * R)) * np.exp(-1j * S_val * R / (1.0 + R))
+    phi_w = W_val * R / (1.0 + W_val * R)   # warped phase ramp ∈ [0, 1)
+    pst_kernel = np.exp(1j * S_val * phi_w)  # pure phase kernel
 
     img_pst = np.fft.ifft2(np.fft.ifftshift(img_filtered * pst_kernel))
 
@@ -79,12 +82,12 @@ class PhaseStretchTransformNode:
                     "tooltip": "PST warp strength (W)"
                 }),
                 "min_thresh": ("FLOAT", {
-                    "default": -1.0, "min": -3.15, "max": 0.0, "step": 0.001,
-                    "tooltip": "Lower phase threshold for binary edge map"
+                    "default": -0.35, "min": -3.15, "max": 0.0, "step": 0.001,
+                    "tooltip": "Lower phase threshold for binary edge map (range ≈ -phase_strength to 0)"
                 }),
                 "max_thresh": ("FLOAT", {
-                    "default": 0.003, "min": 0.0, "max": 3.15, "step": 0.001,
-                    "tooltip": "Upper phase threshold for binary edge map"
+                    "default": 0.35, "min": 0.0, "max": 3.15, "step": 0.001,
+                    "tooltip": "Upper phase threshold for binary edge map (range ≈ 0 to phase_strength)"
                 }),
                 "morph_flag": ("BOOLEAN", {
                     "default": True,
