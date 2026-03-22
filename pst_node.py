@@ -53,10 +53,12 @@ def phase_stretch_transform(img_gray: np.ndarray,
         edges = ndimage.binary_closing(edges, structure=np.ones((3, 3))).astype(np.float64)
         edges = ndimage.binary_opening(edges, structure=np.ones((3, 3))).astype(np.float64)
     else:
-        # Soft edge map: |phase| with robust percentile normalization
+        # Soft edge map: subtract noise floor first so background → black, edges → bright
         abs_phase = np.abs(phase)
-        p99 = np.percentile(abs_phase, 99)
-        edges = np.clip(abs_phase / (p99 + 1e-9), 0.0, 1.0)
+        noise_floor = np.percentile(abs_phase, 50)          # background level
+        signal = np.clip(abs_phase - noise_floor, 0.0, None)
+        p_signal = np.percentile(signal, 99.5)
+        edges = np.clip(signal / (p_signal + 1e-9), 0.0, 1.0)
 
     return phase, edges
 
@@ -151,10 +153,12 @@ class PhaseStretchTransformNode:
             else:
                 edge_out = np.stack([edges] * 3, axis=-1).astype(np.float32)
 
-            # ── phase_image: |phase| with percentile normalisation ────────────
+            # ── phase_image: same noise-floor-subtracted normalization ────────
             abs_phase = np.abs(phase)
-            p99 = np.percentile(abs_phase, 99)
-            phase_norm = np.clip(abs_phase / (p99 + 1e-9), 0.0, 1.0)
+            noise_floor = np.percentile(abs_phase, 50)
+            signal = np.clip(abs_phase - noise_floor, 0.0, None)
+            p_signal = np.percentile(signal, 99.5)
+            phase_norm = np.clip(signal / (p_signal + 1e-9), 0.0, 1.0)
             phase_out = np.stack([phase_norm] * 3, axis=-1).astype(np.float32)
 
             edge_frames.append(torch.from_numpy(edge_out))
