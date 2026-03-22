@@ -70,6 +70,12 @@ Load Image → Phase Stretch Transform → Preview Image
               (edge_image or phase_image)
 ```
 
+## Screenshots
+
+![ComfyUI Phase Stretch Transform Workflow](https://raw.githubusercontent.com/bemoregt/ComfyUI_PhaseStretchTransform/main/ScrShot%206.png)
+
+![Phase Stretch Transform Result](https://raw.githubusercontent.com/bemoregt/ComfyUI_PhaseStretchTransform/main/126134017.jpeg)
+
 ## Requirements
 
 - Python ≥ 3.10
